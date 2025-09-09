@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grow Crop</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1, h2 {
+      color: #2c3e50;
+    }
+    #location-status {
+      margin-bottom: 15px;
+      font-style: italic;
+      color: #555;
+    }
+    section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .info-item {
+      margin-bottom: 8px;
+    }
+    #help-bot {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 320px;
+      max-width: 90vw;
+      background: #2c3e50;
+      color: #ecf0f1;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 400px;
+      z-index: 1000;
+    }
+    #help-bot-header {
+      padding: 12px 15px;
+      background: #34495e;
+      font-weight: bold;
+      font-size: 1.1em;
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #help-bot-close {
+      cursor: pointer;
+      font-weight: normal;
+      font-size: 1.2em;
+      user-select: none;
+    }
+    #help-bot-messages {
+      flex-grow: 1;
+      padding: 10px 15px;
+      overflow-y: auto;
+      background: #34495e;
+      font-size: 0.9em;
+      line-height: 1.4em;
+    }
+    #help-bot-input-area {
+      display: flex;
+      padding: 10px 15px;
+      background: #2c3e50;
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+    }
+    #help-bot-input {
+      flex-grow: 1;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 10px;
+      font-size: 0.95em;
+      outline: none;
+    }
+    #help-bot-send, #help-bot-voice {
+      background: #1abc9c;
+      border: none;
+      color: white;
+      padding: 8px 12px;
+      margin-left: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.3s ease;
+    }
+    #help-bot-send:hover, #help-bot-voice:hover {
+      background: #16a085;
+    }
+    .bot-message {
+      background: #1abc9c;
+      padding: 8px 12px;
+      border-radius: 15px 15px 15px 0;
+      margin-bottom: 10px;
+      max-width: 80%;
+      color: #fff;
+      align-self: flex-start;
+      word-wrap: break-word;
+    }
+    .user-message {
+      background: #3498db;
+      padding: 8px 12px;
+      border-radius: 15px 15px 0 15px;
+      margin-bottom: 10px;
+      max-width: 80%;
+      color: #fff;
+      align-self: flex-end;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="title">Grow Crop</h1>
+  <div id="location-status">Detecting your location...</div>
+
+  <section id="soil-info-section" style="display:none;">
+    <h2 id="soil-info-title">Soil Information</h2>
+    <div id="soil-info"></div>
+  </section>
+
+  <section id="climate-info-section" style="display:none;">
+    <h2 id="climate-info-title">Climate Information</h2>
+    <div id="climate-info"></div>
+  </section>
+
+  <section id="crop-recommendations-section" style="display:none;">
+    <h2 id="crop-recommendations-title">Suggested Crops</h2>
+    <div id="crop-recommendations"></div>
+  </section>
+
+  <div id="help-bot" aria-label="Help Bot">
+    <div id="help-bot-header">
+      <span id="help-bot-title">Help Bot</span>
+      <span id="help-bot-close" title="Close Help Bot" role="button" tabindex="0" aria-label="Close Help Bot">&times;</span>
+    </div>
+    <div id="help-bot-messages" aria-live="polite" aria-atomic="true"></div>
+    <div id="help-bot-input-area">
+      <input type="text" id="help-bot-input" placeholder="Ask me anything..." aria-label="Help Bot input" />
+      <button id="help-bot-voice" title="Speak" aria-label="Speak to Help Bot">🎤</button>
+      <button id="help-bot-send" aria-label="Send message">Send</button>
+    </div>
+  </div>
+
+<script>
+  // Language strings - example English and Hindi (hi)
+  const translations = {
+    en: {
+      title: "Grow Crop",
+      detectingLocation: "Detecting your location...",
+      locationDenied: "Location access denied or unavailable.",
+      locationError: "Error obtaining location.",
+      soilInfoTitle: "Soil Information",
+      climateInfoTitle: "Climate Information",
+      cropRecommendationsTitle: "Suggested Crops",
+      helpBotTitle: "Help Bot",
+      helpBotWelcome: "Hello! How can I assist you with growing crops today?",
+      helpBotNoSpeech: "Speech recognition not supported in this browser.",
+      helpBotListening: "Listening...",
+      helpBotStoppedListening: "Stopped listening.",
+      helpBotError: "Sorry, I didn't catch that. Please try again.",
+      helpBotSendPlaceholder: "Ask me anything..."
+    },
+    hi: {
+      title: "फसल उगाएँ",
+      detectingLocation: "आपका स्थान पता लगाया जा रहा है...",
+      locationDenied: "स्थान एक्सेस अस्वीकृत या उपलब्ध नहीं है।",
+      locationError: "स्थान प्राप्त करने में त्रुटि।",
+      soilInfoTitle: "मृदा जानकारी",
+      climateInfoTitle: "जलवायु जानकारी",
+      cropRecommendationsTitle: "सुझाई गई फसलें",
+      helpBotTitle: "सहायता बॉट",
+      helpBotWelcome: "नमस्ते! मैं आपकी फसल उगाने में कैसे मदद कर सकता हूँ?",
+      helpBotNoSpeech: "इस ब्राउज़र में स्पीच रिकग्निशन समर्थित नहीं है।",
+      helpBotListening: "सुन रहा हूँ...",
+      helpBotStoppedListening: "सुनना बंद कर दिया गया।",
+      helpBotError: "माफ़ करें, मैं समझ नहीं पाया। कृपया पुनः प्रयास करें।",
+      helpBotSendPlaceholder: "मुझसे कुछ पूछें..."
+    }
+  };
+
+  // Get user's language from localStorage or default to English
+  let userLang = localStorage.getItem('language') || 'en';
+  if (!translations[userLang]) userLang = 'en';
+
+  // Set UI text according to language
+  function setLanguageTexts() {
+    document.getElementById('title').textContent = translations[userLang].title;
+    document.getElementById('location-status').textContent = translations[userLang].detectingLocation;
+    document.getElementById('soil-info-title').textContent = translations[userLang].soilInfoTitle;
+    document.getElementById('climate-info-title').textContent = translations[userLang].climateInfoTitle;
+    document.getElementById('crop-recommendations-title').textContent = translations[userLang].cropRecommendationsTitle;
+    document.getElementById('help-bot-title').textContent = translations[userLang].helpBotTitle;
+    document.getElementById('help-bot-input').placeholder = translations[userLang].helpBotSendPlaceholder;
+  }
+
+  setLanguageTexts();
+
+  // Elements
+  const locationStatus = document.getElementById('location-status');
+  const soilInfoSection = document.getElementById('soil-info-section');
+  const climateInfoSection = document.getElementById('climate-info-section');
+  const cropRecommendationsSection = document.getElementById('crop-recommendations-section');
+  const soilInfoDiv = document.getElementById('soil-info');
+  const climateInfoDiv = document.getElementById('climate-info');
+  const cropRecommendationsDiv = document.getElementById('crop-recommendations');
+
+  // Help Bot Elements
+  const helpBot = document.getElementById('help-bot');
+  const helpBotMessages = document.getElementById('help-bot-messages');
+  const helpBotInput = document.getElementById('help-bot-input');
+  const helpBotSendBtn = document.getElementById('help-bot-send');
+  const helpBotVoiceBtn = document.getElementById('help-bot-voice');
+  const helpBotCloseBtn = document.getElementById('help-bot-close');
+
+  // Speech Synthesis and Recognition setup
+  const synth = window.speechSynthesis;
+  let recognition;
+  let recognizing = false;
+  if ('webkitSpeechRecognition' in window) {
+    recognition = new webkitSpeechRecognition();
+    recognition.lang = userLang === 'hi' ? 'hi-IN' : 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      recognizing = true;
+      appendBotMessage(translations[userLang].helpBotListening);
+    };
+    recognition.onend = () => {
+      recognizing = false;
+      appendBotMessage(translations[userLang].helpBotStoppedListening);
+    };
+    recognition.onerror = (event) => {
+      appendBotMessage(translations[userLang].helpBotError);
+    };
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript.trim();
+      appendUserMessage(transcript);
+      processHelpBotQuery(transcript);
+    };
+  } else {
+    helpBotVoiceBtn.disabled = true;
+    helpBotVoiceBtn.title = translations[userLang].helpBotNoSpeech;
+  }
+
+  // Append messages to help bot chat area
+  function appendBotMessage(msg) {
+    const div = document.createElement('div');
+    div.className = 'bot-message';
+    div.textContent = msg;
+    helpBotMessages.appendChild(div);
+    helpBotMessages.scrollTop = helpBotMessages.scrollHeight;
+    speak(msg);
+  }
+  function appendUserMessage(msg) {
+    const div = document.createElement('div');
+    div.className = 'user-message';
+    div.textContent = msg;
+    helpBotMessages.appendChild(div);
+    helpBotMessages.scrollTop = helpBotMessages.scrollHeight;
+  }
+
+  // Speak text using speech synthesis
+  function speak(text) {
+    if (!synth) return;
+    if (synth.speaking) {
+      synth.cancel();
+    }
+    const utterThis = new SpeechSynthesisUtterance(text);
+    utterThis.lang = userLang === 'hi' ? 'hi-IN' : 'en-US';
+    synth.speak(utterThis);
+  }
+
+  // Process user query - basic example, can be expanded with API calls
+  function processHelpBotQuery(query) {
+    // For demonstration, just echo back
+    // In real app, connect to NLP or FAQ API
+    setTimeout(() => {
+      appendBotMessage("You asked: " + query);
+    }, 500);
+  }
+
+  // Event listeners for Help Bot
+  helpBotSendBtn.addEventListener('click', () => {
+    const msg = helpBotInput.value.trim();
+    if (msg.length === 0) return;
+    appendUserMessage(msg);
+    helpBotInput.value = '';
+    processHelpBotQuery(msg);
+  });
+  helpBotInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      helpBotSendBtn.click();
+    }
+  });
+  helpBotVoiceBtn.addEventListener('click', () => {
+    if (!recognition) return;
+    if (recognizing) {
+      recognition.stop();
+      return;
+    }
+    recognition.start();
+  });
+  helpBotCloseBtn.addEventListener('click', () => {
+    helpBot.style.display = 'none';
+  });
+  helpBotCloseBtn.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      helpBotCloseBtn.click();
+    }
+  });
+
+  // Initialize Help Bot with welcome message
+  appendBotMessage(translations[userLang].helpBotWelcome);
+
+  // Geolocation and API call
+  function fetchBhuvanData(lat, lon) {
+    locationStatus.textContent = translations[userLang].detectingLocation;
+    fetch('/api/bhuvan', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ latitude: lat, longitude: lon })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Network response was not ok');
+      return res.json();
+    })
+    .then(data => {
+      // Expected data structure example:
+      // { soil: {...}, climate: {...}, crops: [...] }
+      displayBhuvanData(data);
+    })
+    .catch(err => {
+      locationStatus.textContent = translations[userLang].locationError + ' ' + err.message;
+    });
+  }
+
+  function displayBhuvanData(data) {
+    locationStatus.textContent = '';
+    if (data.soil) {
+      soilInfoDiv.innerHTML = '';
+      for (const [key, value] of Object.entries(data.soil)) {
+        const div = document.createElement('div');
+        div.className = 'info-item';
+        div.textContent = `${capitalize(key)}: ${value}`;
+        soilInfoDiv.appendChild(div);
+      }
+      soilInfoSection.style.display = 'block';
+    }
+    if (data.climate) {
+      climateInfoDiv.innerHTML = '';
+      for (const [key, value] of Object.entries(data.climate)) {
+        const div = document.createElement('div');
+        div.className = 'info-item';
+        div.textContent = `${capitalize(key)}: ${value}`;
+        climateInfoDiv.appendChild(div);
+      }
+      climateInfoSection.style.display = 'block';
+    }
+    if (Array.isArray(data.crops) && data.crops.length > 0) {
+      cropRecommendationsDiv.innerHTML = '';
+      data.crops.forEach(crop => {
+        const div = document.createElement('div');
+        div.className = 'info-item';
+        div.textContent = crop;
+        cropRecommendationsDiv.appendChild(div);
+      });
+      cropRecommendationsSection.style.display = 'block';
+    }
+  }
+
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  // Get user location
+  if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        locationStatus.textContent = `Latitude: ${lat.toFixed(4)}, Longitude: ${lon.toFixed(4)}`;
+        fetchBhuvanData(lat, lon);
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          locationStatus.textContent = translations[userLang].locationDenied;
+        } else {
+          locationStatus.textContent = translations[userLang].locationError;
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  } else {
+    locationStatus.textContent = translations[userLang].locationDenied;
+  }
+</script>
+</body>
+</html>

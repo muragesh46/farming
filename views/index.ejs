@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Farming Assistant</title>
+    <style>
+        body { font-family: Arial; text-align: center; padding: 50px; }
+        .lang-btn { padding: 15px 30px; margin: 20px; font-size: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+<h1>Select Your Language</h1>
+<button class="lang-btn" onclick="setLanguage('en')">English</button>
+<button class="lang-btn" onclick="setLanguage('hi')">Hindi</button>
+<button class="lang-btn" onclick="setLanguage('kn')">Kannada</button>
+
+<script>
+    function setLanguage(lang) {
+        localStorage.setItem('userLanguage', lang);
+        window.location.href = '/dashboard';
+    }
+</script>
+</body>
+</html>

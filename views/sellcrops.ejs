@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= translations.title %></title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0; background: #f5f7fa;
+      color: #333;
+    }
+    header {
+      background-color: #2e7d32;
+      color: white;
+      padding: 1rem 2rem;
+      text-align: center;
+    }
+    main {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      align-items: flex-end;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+    select, input[type="number"] {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .form-group {
+      flex: 1 1 200px;
+      min-width: 180px;
+    }
+    button {
+      background-color: #2e7d32;
+      color: white;
+      border: none;
+      padding: 0.7rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    button:hover, button:focus {
+      background-color: #1b4d20;
+      outline: none;
+    }
+    section {
+      margin-bottom: 2rem;
+    }
+    section h2 {
+      border-bottom: 2px solid #2e7d32;
+      padding-bottom: 0.3rem;
+      margin-bottom: 1rem;
+      color: #2e7d32;
+    }
+    .market-list, .price-trends, .profit-potential {
+      background: #e8f5e9;
+      border-radius: 6px;
+      padding: 1rem;
+      min-height: 80px;
+    }
+    .market-list ul {
+      margin: 0;
+      padding-left: 1.2rem;
+    }
+    .language-select {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      z-index: 1000;
+    }
+    #helpbot {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #2e7d32;
+      color: white;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: background-color 0.2s ease;
+      z-index: 1000;
+    }
+    #helpbot:hover {
+      background-color: #1b4d20;
+    }
+    #helpbot svg {
+      width: 28px;
+      height: 28px;
+      fill: white;
+    }
+    @media (max-width: 600px) {
+      form {
+        flex-direction: column;
+      }
+      .form-group {
+        min-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="page-title"><%= translations.title %></h1>
+  </header>
+  <select id="language-select" class="language-select" aria-label="Select Language" title="Select Language">
+    <option value="en" <%= lang === 'en' ? 'selected' : '' %>>English</option>
+    <option value="hi" <%= lang === 'hi' ? 'selected' : '' %>>हिन्दी</option>
+    <option value="kn" <%= lang === 'kn' ? 'selected' : '' %>>ಕನ್ನಡ</option>
+    <option value="te" <%= lang === 'te' ? 'selected' : '' %>>తెలుగు</option>
+  </select>
+  <main>
+    <form id="sellcrops-form" aria-label="<%= translations.formAriaLabel %>">
+      <div class="form-group">
+        <label for="crop-type"><%= translations.cropTypeLabel %></label>
+        <select id="crop-type" name="cropType" required aria-required="true" aria-describedby="cropTypeHelp">
+          <option value="" disabled selected><%= translations.selectCropPlaceholder %></option>
+          <% crops.forEach(function(crop){ %>
+            <option value="<%= crop.id %>"><%= crop.name %></option>
+          <% }) %>
+        </select>
+        <small id="cropTypeHelp" class="sr-only"><%= translations.cropTypeHelp %></small>
+      </div>
+      <div class="form-group">
+        <label for="quantity"><%= translations.quantityLabel %></label>
+        <input type="number" id="quantity" name="quantity" min="1" step="1" required aria-required="true" aria-describedby="quantityHelp" placeholder="<%= translations.quantityPlaceholder %>" />
+        <small id="quantityHelp" class="sr-only"><%= translations.quantityHelp %></small>
+      </div>
+      <div class="form-group">
+        <label for="location"><%= translations.locationLabel %></label>
+        <select id="location" name="location" required aria-required="true" aria-describedby="locationHelp">
+          <option value="" disabled selected><%= translations.selectLocationPlaceholder %></option>
+          <% locations.forEach(function(loc){ %>
+            <option value="<%= loc.id %>"><%= loc.name %></option>
+          <% }) %>
+        </select>
+        <small id="locationHelp" class="sr-only"><%= translations.locationHelp %></small>
+      </div>
+      <div class="form-group" style="flex: 0 0 auto;">
+        <button type="submit" id="fetch-prices-btn"><%= translations.fetchPricesButton %></button>
+      </div>
+    </form>
+
+    <section aria-live="polite" aria-atomic="true" aria-relevant="additions" id="nearest-markets-section">
+      <h2><%= translations.nearestMarketsTitle %></h2>
+      <div class="market-list" id="nearest-markets">
+        <p><%= translations.noDataText %></p>
+      </div>
+    </section>
+
+    <section aria-live="polite" aria-atomic="true" aria-relevant="additions" id="price-trends-section">
+      <h2><%= translations.priceTrendsTitle %></h2>
+      <div class="price-trends" id="price-trends">
+        <p><%= translations.noDataText %></p>
+      </div>
+    </section>
+
+    <section aria-live="polite" aria-atomic="true" aria-relevant="additions" id="profit-potential-section">
+      <h2><%= translations.profitPotentialTitle %></h2>
+      <div class="profit-potential" id="profit-potential">
+        <p><%= translations.noDataText %></p>
+      </div>
+    </section>
+  </main>
+
+  <button id="helpbot" aria-label="<%= translations.helpBotLabel %>" title="<%= translations.helpBotLabel %>">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2zm.75 17h-1.5v-1.5h1.5zm1.347-7.125a2.75 2.75 0 0 0-4.194 2.375h-1.5a4.25 4.25 0 0 1 6.484-3.667 2.251 2.251 0 0 1-.79 3.292c-.227.135-.5.22-.75.22a1 1 0 0 1-1-1h-1.5a2.5 2.5 0 0 0 1.45-2.22z"/>
+    </svg>
+  </button>
+
+  <script src="/routes/sellcrop.js"></script>
+  <script>
+    // Translations for client side dynamic text
+    const translations = <%- JSON.stringify(translations) %>;
+
+    // Elements
+    const languageSelect = document.getElementById('language-select');
+    const pageTitle = document.getElementById('page-title');
+    const form = document.getElementById('sellcrops-form');
+    const nearestMarketsDiv = document.getElementById('nearest-markets');
+    const priceTrendsDiv = document.getElementById('price-trends');
+    const profitPotentialDiv = document.getElementById('profit-potential');
+    const helpBotBtn = document.getElementById('helpbot');
+    const fetchPricesBtn = document.getElementById('fetch-prices-btn');
+
+    // On language change, reload page with selected lang param
+    languageSelect.addEventListener('change', (e) => {
+      const selectedLang = e.target.value;
+      const url = new URL(window.location.href);
+      url.searchParams.set('lang', selectedLang);
+      window.location.href = url.toString();
+    });
+
+    // Helper to speak text with Web Speech API
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = languageSelect.value === 'en' ? 'en-US' :
+                       languageSelect.value === 'hi' ? 'hi-IN' :
+                       languageSelect.value === 'kn' ? 'kn-IN' :
+                       languageSelect.value === 'te' ? 'te-IN' : 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Help Bot messages for marketplace tips
+    const helpMessages = {
+      en: "Welcome to the marketplace! Select your crop, quantity, and location, then click fetch prices to see the best markets and profit potential. Remember to check price trends before selling.",
+      hi: "मार्केटप्लेस में आपका स्वागत है! अपनी फसल, मात्रा और स्थान चुनें, फिर सबसे अच्छे बाजार और लाभ संभावनाएं देखने के लिए 'मूल्य प्राप्त करें' पर क्लिक करें। बिक्री से पहले मूल्य रुझानों की जांच करना न भूलें।",
+      kn: "ಮಾರುಕಟ್ಟೆಗೆ ಸ್ವಾಗತ! ನಿಮ್ಮ ಬೆಳೆ, ಪ್ರಮಾಣ ಮತ್ತು ಸ್ಥಳವನ್ನು ಆಯ್ಕೆಮಾಡಿ, ನಂತರ ಉತ್ತಮ ಮಾರುಕಟ್ಟೆಗಳು ಮತ್ತು ಲಾಭ ಸಾಧ್ಯತೆಗಳನ್ನು ನೋಡಲು ಬೆಲೆಗಳನ್ನು ಪಡೆಯಿರಿ ಕ್ಲಿಕ್ ಮಾಡಿ. ಮಾರಾಟ ಮಾಡುವ ಮೊದಲು ಬೆಲೆ ಪ್ರವೃತ್ತಿಗಳನ್ನು ಪರಿಶೀಲಿಸುವುದನ್ನು ಮರೆಯಬೇಡಿ.",
+      te: "మార్కెట్‌ప్లేస్‌కు స్వాగతం! మీ పంట, పరిమాణం మరియు ప్రాంతాన్ని ఎంచుకుని, ఉత్తమ మార్కెట్లు మరియు లాభ అవకాశాలను చూడటానికి ధరలను తెచ్చుకోండి క్లిక్ చేయండి. అమ్మకానికి ముందే ధర ధోరణులను తనిఖీ చేయండి."
+    };
+
+    helpBotBtn.addEventListener('click', () => {
+      const lang = languageSelect.value || 'en';
+      const message = helpMessages[lang] || helpMessages['en'];
+      alert(message);
+      speakText(message);
+    });
+
+    // Clear display sections
+    function clearDisplaySections() {
+      nearestMarketsDiv.innerHTML = `<p>${translations.noDataText}</p>`;
+      priceTrendsDiv.innerHTML = `<p>${translations.noDataText}</p>`;
+      profitPotentialDiv.innerHTML = `<p>${translations.noDataText}</p>`;
+    }
+
+    // Show loading state on fetch button
+    function setLoading(isLoading) {
+      fetchPricesBtn.disabled = isLoading;
+      fetchPricesBtn.textContent = isLoading ? translations.loadingText : translations.fetchPricesButton;
+    }
+
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearDisplaySections();
+      setLoading(true);
+
+      const cropType = form.elements['cropType'].value;
+      const quantity = form.elements['quantity'].value;
+      const location = form.elements['location'].value;
+
+      if (!cropType || !quantity || !location) {
+        alert(translations.fillAllFieldsAlert);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Call the sellcrop.js API logic (assumed to expose a global function fetchMarketData)
+        const response = await fetchMarketData({ cropType, quantity: Number(quantity), location });
+        if (!response || !response.success) {
+          nearestMarketsDiv.innerHTML = `<p>${translations.errorFetchingData}</p>`;
+          priceTrendsDiv.innerHTML = `<p>${translations.errorFetchingData}</p>`;
+          profitPotentialDiv.innerHTML = `<p>${translations.errorFetchingData}</p>`;
+          setLoading(false);
+          return;
+        }
+
+        // Nearest Markets
+        if (response.nearestMarkets && response.nearestMarkets.length) {
+          const marketsList = response.nearestMarkets.map(m => `<li>${m.name} - ${m.distance} km</li>`).join('');
+          nearestMarketsDiv.innerHTML = `<ul>${marketsList}</ul>`;
+        } else {
+          nearestMarketsDiv.innerHTML = `<p>${translations.noMarketsFound}</p>`;
+        }
+
+        // Price Trends
+        if (response.priceTrends && response.priceTrends.length) {
+          // Simple text-based trend display
+          const trends = response.priceTrends.map(pt =>
+            `<div><strong>${pt.period}:</strong> ${pt.price} ${translations.currency}</div>`
+          ).join('');
+          priceTrendsDiv.innerHTML = trends;
+        } else {
+          priceTrendsDiv.innerHTML = `<p>${translations.noPriceTrends}</p>`;
+        }
+
+        // Profit Potential
+        if (typeof response.profitPotential === 'number') {
+          profitPotentialDiv.innerHTML = `<p>${translations.profitPotentialText}: <strong>${response.profitPotential.toFixed(2)} ${translations.currency}</strong></p>`;
+        } else {
+          profitPotentialDiv.innerHTML = `<p>${translations.noProfitData}</p>`;
+        }
+
+      } catch (error) {
+        nearestMarketsDiv.innerHTML = `<p>${translations.errorFetchingData}</p>`;
+        priceTrendsDiv.innerHTML = `<p>${translations.errorFetchingData}</p>`;
+        profitPotentialDiv.innerHTML = `<p>${translations.errorFetchingData}</p>`;
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
